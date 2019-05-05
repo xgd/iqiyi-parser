@@ -86,6 +86,7 @@ class ToolReq:
 
     @staticmethod
     def checkFfmpeg():
+        return True
         dlm = nbdler.Manager()
         if (not os.path.exists('ffmpeg.exe') or os.path.exists('ffmpeg.exe.nbdler')) and not os.path.exists(cv.FFMPEG_PATH):
             dlg = wx.MessageDialog(None, u'该程序需要ffmpeg.exe才能完成工作，是否要下载？', u'提示', wx.YES_NO | wx.ICON_INFORMATION)
@@ -115,6 +116,8 @@ class ToolReq:
 
     @staticmethod
     def checkNode():
+        return True
+
         dlm = nbdler.Manager()
         if not os.path.exists('node.exe') or os.path.exists('node.exe.nbdler'):
             dlg = wx.MessageDialog(None, u'该程序需要Nodejs.exe才能完成工作，是否要下载？', u'提示', wx.YES_NO | wx.ICON_INFORMATION)
@@ -277,6 +280,7 @@ class FrameParser:
         def _parse(url, qualitys):
             try:
                 res = parser.parse(url, qualitys)
+                print(res)
             except (socket.timeout, URLError, SSLError):
                 wx.CallAfter(FrameParser.ButtonParse.timeout)
             except Exception as e:

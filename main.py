@@ -39,8 +39,8 @@ if __name__ == '__main__':
         ferr.write('------------------------\n')
         ferr.write('%s\n' % time.asctime(time.localtime(time.time())))
         ferr.write('------------------------\n')
-        sys.stderr = ferr
 
+        #sys.stderr = ferr
         gui.init()
         GUIEventBinder.init()
 
@@ -50,6 +50,6 @@ if __name__ == '__main__':
 
         handler.downloader.join()
 
-        # wait_thread()
+        wait_thread()
 
         pass

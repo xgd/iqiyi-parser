@@ -56,7 +56,6 @@ class Ffmpeg(threading.Thread):
 
         self.pipe_open(cmdline)
 
-
     # def convert_mp4(self):
         # cmdline = '"{ffmpeg_path}" -i "{src}" -i "{audio}" -vcodec copy -acodec copy "{output}"'
         # cmdline = '"ffmpeg.exe" -i "out.mp4" -c:v libx264 "out1.mp4"'

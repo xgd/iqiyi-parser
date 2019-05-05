@@ -25,7 +25,7 @@ def clearUndoneJob():
 
 def initConfig():
 
-    cv.FFMPEG_PATH = 'ffmpeg.exe'
+    cv.FFMPEG_PATH = 'ffmpeg'
 
     saveConfig()
 

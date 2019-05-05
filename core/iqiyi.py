@@ -10,6 +10,8 @@ from urllib.parse import unquote
 import PyJSCaller
 from core.common import BasicParser, BasicRespond, BasicVideoInfo, make_query
 
+import execjs
+
 IQIYI = None
 
 
@@ -86,7 +88,9 @@ global_params = {
     # 'k_ft4': '4'                                # k_ft = 4: prefer *.ts ,else *.f4v
 }
 
-
+js_runtime = execjs.get('Node')
+with open('js/iqiyi.js', 'r') as js:
+    js_context = js_runtime.compile(js.read())
 
 class Iqiyi(BasicParser):
     def __init__(self):
@@ -110,14 +114,11 @@ class Iqiyi(BasicParser):
 
         tvid = re.search('''param\['tvid'\] = "(.+?)"''', text, re.S).group(1)
         vid = re.search('''param\['vid'\] = "(.+?)"''', text, re.I | re.S).group(1)
-
         videos_res = []
 
         title = BeautifulSoup(text, features='html.parser').title.string
-
         for bid in bids:
             target_ts_url, target_f4v_url = self.makeTargetUrl(tvid, vid, bid)
-
             res_json_ts = self.getTargetJson(target_ts_url)
 
             if res_json_ts:
@@ -134,65 +135,47 @@ class Iqiyi(BasicParser):
                                                 res_json_f4v['data']['ctl']['bid'])
 
                 videos_res.append(IqiyiRespond(self, res_json_f4v, res_json_f4v, extra_info_f4v))
-
         return videos_res
 
     def makeTargetUrl(self, tvid, vid, bid):
 
         time_str = str(int(time.time() * 1000))
 
-        with PyJSCaller.Sesson('js/iqiyi.js') as sess:
-            authkey, callback, require, cmd5x = sess.require('authkey', 'callback', 'require', 'cmd5x')
+        params = {
+            'tvid': tvid,
+            'vid': vid,
+            'bid': str(bid),
+            'tm': time_str,
+            'uid': self.user.uid,
+            'k_uid': self.user.k_uid,
+            'pck': self.user.pck,
+            'dfp': self.user.dfp,
+            'callback': js_context.call('callback'),
+            'authKey': js_context.call('authkey', js_context.call('authkey', '') + time_str + tvid),
+        }
 
-            # auk = authkey(authkey('') + time_str + tvid)
-            # calb = callback()
+        ts_params = global_params.copy()
+        ts_params['k_ft4'] = '4'
+        ts_params.update(params)
 
-            params = {
-                'tvid': tvid,
-                'vid': vid,
-                'bid': str(bid),
-                'tm': time_str,
-                'uid': self.user.uid,
-                'k_uid': self.user.k_uid,
-                'pck': self.user.pck,
-                'dfp': self.user.dfp,
-                'callback': callback(),
-                'authKey': authkey(authkey('') + time_str + tvid),
-            }
+        ts_req_path = self.sess_make_req_path(ts_params)
 
-            ts_params = global_params.copy()
-            ts_params['k_ft4'] = '4'
-            ts_params.update(params)
+        f4v_params = global_params.copy()
+        f4v_params.update(params)
 
-            ts_req_path = self.sess_make_req_path(sess, ts_params)
+        f4v_req_path = self.sess_make_req_path(f4v_params)
 
-            f4v_params = global_params.copy()
-            f4v_params.update(params)
-
-            f4v_req_path = self.sess_make_req_path(sess, f4v_params)
-
-            sess.call(ts_req_path)
-            sess.call(f4v_req_path)
-
-        return ['http://cache.video.iqiyi.com/' + ts_req_path.getValue().lstrip('/'),
-                'http://cache.video.iqiyi.com/' + f4v_req_path.getValue().lstrip('/')]
+        return ['http://cache.video.iqiyi.com/' + ts_req_path.lstrip('/'),
+                'http://cache.video.iqiyi.com/' + f4v_req_path.lstrip('/')]
 
 
-    def sess_make_req_path(self, sess, req_params):
-
-        querystring = sess.locals.require('querystring')
-        querystring.require('stringify')
-
-        params_encode = querystring.stringify(req_params)
-
-        params_encode.operands.args[0].getExprText()
-
+    def sess_make_req_path(self, req_params):
+        params_encode = js_context.call('strfy', req_params)
         req_path = '/jp/dash?' + params_encode
 
-        vf = sess.locals.cmd5x(req_path)
+        vf = js_context.call('cmd5x', req_path)
 
         req_path += '&vf=' + vf
-        # sess.call(req_path)
         return req_path
 
 
@@ -425,15 +408,11 @@ class IqiyiRespond(BasicRespond):
             filenames.append(rex_filename.search(paths[i]).group(1))
             t_s.append(str(boss.get('data', {}).get('t', '')) if boss else '')
 
-        ibts_tmp = []
-        with PyJSCaller.Sesson('js/iqiyi.js') as sess:
-            cmd5x = sess.require('cmd5x')
-            for i in range(len(fs)):
-                ibt = cmd5x(str(t_s[i] + filenames[i]))
-                ibts_tmp.append(ibt)
-                sess.call(ibt)
+        ibts = []
+        ibt = js_context.call('cmd5x', str(t_s[i] + filenames[i]))
+        ibts.append(ibt)
 
-        ibts = [i.getValue() for i in ibts_tmp]
+        #ibts = [i.getValue() for i in ibts_tmp]
         all_res = []
         for i in range(len(fs)):
             if boss and boss.get('data', {}).get('prv') == 1 and boss['previewTime'] == 1:

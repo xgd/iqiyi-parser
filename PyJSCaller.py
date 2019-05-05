@@ -50,12 +50,10 @@ class Sesson:
             if i in self._methods:
                 methods.append(self._methods[i])
                 continue
-
             method = Method(None, i)
             self._methods[i] = method
             methods.append(method)
             setattr(self.locals, i, method)
-
         return methods if len(methods) != 1 else methods[0]
 
     def run(self):
@@ -70,7 +68,6 @@ class Sesson:
         with open('TMP.js', 'w') as f:
             with open(self._file, 'r') as origin:
                 f.write(origin.read() + exec_code)
-
         res = pipe_eval('TMP.js')
         for i, j in enumerate(self._cells):
             j.set(res[i])
@@ -502,41 +499,17 @@ def setNodePath(path):
     global NODEPATH
     NODEPATH = path
 
-
-
+import execjs
+import time
 if __name__ == "__main__":
-    setNodePath('')
-
-    import time
-    start = time.clock()
-
-    a = 2
-    b = 3
-    c = 5
-
-    with Sesson('example.js') as sess:
-        triAdd, triMul = sess.require('triAdd', 'triMul')
-        res = triMul(triAdd(a, b, c), triAdd(c, b, a), 1)
-        sess.call(res)
-
-    print(res.getValue())
-    print('total time：%s' % (time.clock() - start))
 
     start = time.clock()
-
-    with Sesson('example.js') as sess:
-        require = sess.require('require')
-
-        querystring = require('querystring')
-        querystring.require('stringify')
-
-        query_dict = {'one': 2, 'two': [1, 'haha', {'h': res.getValue(), 'ss': {'2': 2}}]}
-
-        query_str = querystring.stringify(query_dict)
-
-        sess.call(query_str)
-
-    print(query_str.getValue())
-    print('total time: %s' % (time.clock() - start))
+    runtime = execjs.get('Node')
+    with open('js/iqiyi.js', 'r') as js:
+        context = runtime.compile(js.read())
+        print(context.call("cmd5x", "123456"))
+        print(context.call('strfy', {'1':'1','2':'2'}))
+    
+    print('执行JS脚本总耗时: %s' % (time.clock() - start))
 
 

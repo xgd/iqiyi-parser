@@ -2289,4 +2289,9 @@ function callback(){
 
 }
 
+function strfy(s) {
+    var querystring = require("querystring")
+    return querystring.stringify(s);
+}
+
 
